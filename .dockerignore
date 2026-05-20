@@ -1,0 +1,16 @@
+.gradle/
+.idea/
+src/
+gradle/
+build/reports/
+build/tmp/
+.git/
+.gitignore
+.gitattributes
+.env
+config/
+*.md
+gradlew
+gradlew.bat
+build.gradle.kts
+settings.gradle.kts

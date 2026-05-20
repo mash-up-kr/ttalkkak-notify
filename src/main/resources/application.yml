@@ -1,1 +1,14 @@
-spring.application.name=ttalkkak-notify
+spring:
+  application:
+    name: ttalkkak-notify
+
+webhook:
+  jira:
+    secret: ${JIRA_WEBHOOK_SECRET}
+  confluence:
+    secret: ${CONFLUENCE_WEBHOOK_SECRET}
+
+discord:
+  webhook:
+    task: ${DISCORD_WEBHOOK_URL_TASK}
+    docs: ${DISCORD_WEBHOOK_URL_DOCS}
