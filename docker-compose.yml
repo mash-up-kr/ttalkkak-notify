@@ -12,7 +12,7 @@ services:
     restart: always
 
   app:
-    image: ghcr.io/mingdodev/ttalkkak-notify:latest
+    image: ghcr.io/mash-up-kr/ttalkkak-notify:latest
     expose:
       - "8080"
     env_file:
