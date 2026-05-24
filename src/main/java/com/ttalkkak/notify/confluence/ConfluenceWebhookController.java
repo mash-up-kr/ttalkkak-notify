@@ -25,7 +25,7 @@ public class ConfluenceWebhookController {
             @RequestBody String rawBody,
             @RequestParam(value = "token", required = false) String token) throws Exception {
 
-        // Confluence Cloud does not support webhook secrets (X-Hub-Signature), so token-in-URL is used instead
+        // Confluence Cloud는 X-Hub-Signature 미지원 → URL query token으로 대체
         if (!properties.secret().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
