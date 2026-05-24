@@ -1,13 +1,12 @@
 package com.ttalkkak.notify.confluence;
 
 import com.ttalkkak.notify.discord.DiscordWebhookClient;
-import com.ttalkkak.notify.security.HmacSignatureVerifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
@@ -17,7 +16,6 @@ import tools.jackson.databind.ObjectMapper;
 public class ConfluenceWebhookController {
 
     private final ConfluenceWebhookProperties properties;
-    private final HmacSignatureVerifier signatureVerifier;
     private final ConfluenceEventDispatcher dispatcher;
     private final DiscordWebhookClient discordWebhookClient;
     private final ObjectMapper objectMapper;
@@ -25,9 +23,10 @@ public class ConfluenceWebhookController {
     @PostMapping("/webhook/confluence")
     public ResponseEntity<Void> receive(
             @RequestBody String rawBody,
-            @RequestHeader(value = "X-Hub-Signature", required = false) String signature) throws Exception {
+            @RequestParam(value = "token", required = false) String token) throws Exception {
 
-        if (!signatureVerifier.verify(rawBody, properties.secret(), signature)) {
+        // Confluence Cloud는 X-Hub-Signature 미지원 → URL query token으로 대체
+        if (!properties.secret().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
