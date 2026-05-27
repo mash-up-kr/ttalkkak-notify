@@ -4,19 +4,22 @@ import com.ttalkkak.notify.confluence.ConfluenceApiClient;
 import com.ttalkkak.notify.confluence.ConfluenceEventHandler;
 import com.ttalkkak.notify.confluence.ConfluenceWebhookPayload;
 import com.ttalkkak.notify.discord.model.DiscordEmbed;
-import com.ttalkkak.notify.discord.model.DiscordField;
 import com.ttalkkak.notify.discord.model.DiscordMessage;
 import com.ttalkkak.notify.discord.model.EmbedColor;
 import com.ttalkkak.notify.user.UserMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
 public class CommentCreatedHandler implements ConfluenceEventHandler {
+
+    private static final Pattern MENTION_PATTERN = Pattern.compile("<ri:user ri:account-id=\"([^\"]+)\"[^/]*/>");
+    private static final int MAX_BODY_LENGTH = 500;
 
     private final UserMappingRepository userMappingRepository;
     private final ConfluenceApiClient confluenceApiClient;
@@ -34,22 +37,39 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
         String pageTitle = page != null ? page.getTitle() : "알 수 없음";
         String commentUrl = comment != null ? comment.getSelf() : null;
 
-        String bodyText = comment != null ? confluenceApiClient.fetchCommentBody(comment.getId()) : null;
+        String authorName = userMappingRepository.findName(payload.getUserAccountId()).orElse(null);
 
-        List<DiscordField> fields = new ArrayList<>();
-        userMappingRepository.findName(payload.getUserAccountId()).ifPresent(name ->
-            fields.add(DiscordField.builder()
-                .name("작성자").value(name).inline(true).build())
-        );
+        String rawHtml = comment != null ? confluenceApiClient.fetchCommentBody(comment.getId()) : null;
+        String processedBody = rawHtml != null ? processBody(rawHtml) : null;
+
+        String description = null;
+        if (processedBody != null && !processedBody.isEmpty()) {
+            description = authorName != null ? authorName + ": " + processedBody : processedBody;
+        }
 
         DiscordEmbed embed = DiscordEmbed.builder()
             .title("💬 댓글: " + pageTitle)
-            .description(bodyText)
+            .description(description)
             .color(EmbedColor.CONFLUENCE_COMMENT)
             .url(commentUrl)
-            .fields(fields.isEmpty() ? null : fields)
             .build();
 
         return DiscordMessage.builder().embeds(List.of(embed)).build();
+    }
+
+    private String processBody(String storageHtml) {
+        Matcher matcher = MENTION_PATTERN.matcher(storageHtml);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            String accountId = matcher.group(1);
+            String replacement = userMappingRepository.findDiscordId(accountId)
+                .map(id -> "<@" + id + ">")
+                .orElseGet(() -> userMappingRepository.findName(accountId).orElse("@" + accountId));
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(sb);
+
+        String text = sb.toString().replaceAll("<[^>]+>", "").trim();
+        return text.length() > MAX_BODY_LENGTH ? text.substring(0, MAX_BODY_LENGTH) + "..." : text;
     }
 }
