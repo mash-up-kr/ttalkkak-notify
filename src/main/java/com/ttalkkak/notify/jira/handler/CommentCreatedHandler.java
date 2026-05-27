@@ -37,17 +37,21 @@ public class CommentCreatedHandler implements JiraEventHandler {
 
         String rawBody = comment != null && comment.getBody() != null ? comment.getBody() : null;
 
-        String pingContent = rawBody != null ? extractMentionPings(rawBody) : null;
-        String processedBody = rawBody != null ? stripAndTruncate(rawBody) : null;
-
         String authorName = comment != null && comment.getAuthor() != null
             ? userMappingRepository.findName(comment.getAuthor().getAccountId()).orElse(comment.getAuthor().getDisplayName())
             : "알 수 없음";
 
+        String content = null;
+        if (rawBody != null) {
+            String pingPart = extractMentionPings(rawBody);
+            if (pingPart != null) {
+                content = authorName + "님이 댓글에서 " + pingPart + " 님을 언급했습니다.";
+            }
+        }
+
+        String processedBody = rawBody != null ? stripAndTruncate(rawBody) : null;
         String description = (processedBody != null && !processedBody.isEmpty())
             ? authorName + ": " + processedBody : null;
-
-        String content = pingContent != null ? pingContent + " 확인 부탁드려요!" : null;
 
         DiscordEmbed embed = DiscordEmbed.builder()
             .title(title)
@@ -76,7 +80,7 @@ public class CommentCreatedHandler implements JiraEventHandler {
         StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
             String accountId = matcher.group(1);
-            String name = userMappingRepository.findName(accountId).orElse("@" + accountId);
+            String name = "@" + userMappingRepository.findName(accountId).orElse(accountId);
             matcher.appendReplacement(sb, Matcher.quoteReplacement(name));
         }
         matcher.appendTail(sb);

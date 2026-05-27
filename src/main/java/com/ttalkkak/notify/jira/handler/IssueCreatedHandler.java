@@ -30,9 +30,14 @@ public class IssueCreatedHandler implements JiraEventHandler {
         JiraWebhookPayload.Fields fields = issue.getFields();
 
         String title = "🆕 [" + issue.getKey() + "] " + fields.getSummary();
-        String description = buildAssigneeMention(fields.getAssignee());
 
         List<DiscordField> embedFields = new ArrayList<>();
+        if (fields.getAssignee() != null) {
+            String assigneeName = userMappingRepository.findName(fields.getAssignee().getAccountId())
+                .orElse(fields.getAssignee().getDisplayName());
+            embedFields.add(DiscordField.builder()
+                .name("담당자").value(assigneeName).inline(true).build());
+        }
         if (fields.getDecisionLevel() != null) {
             embedFields.add(DiscordField.builder()
                 .name("Decision Level").value(fields.getDecisionLevel().getValue()).inline(true).build());
@@ -44,19 +49,17 @@ public class IssueCreatedHandler implements JiraEventHandler {
 
         DiscordEmbed embed = DiscordEmbed.builder()
             .title(title)
-            .description(description)
             .color(EmbedColor.ISSUE_CREATED)
             .url(issue.getWebUrl())
             .fields(embedFields.isEmpty() ? null : embedFields)
             .build();
 
-        return DiscordMessage.builder().embeds(List.of(embed)).build();
-    }
+        String content = fields.getAssignee() != null
+            ? userMappingRepository.findDiscordId(fields.getAssignee().getAccountId())
+                .map(id -> "<@" + id + "> 새로운 작업이 할당되었습니다.")
+                .orElse(null)
+            : null;
 
-    private String buildAssigneeMention(JiraWebhookPayload.User assignee) {
-        if (assignee == null) return null;
-        return userMappingRepository.findDiscordId(assignee.getAccountId())
-            .map(id -> "담당자: <@" + id + ">")
-            .orElseGet(() -> "담당자: " + assignee.getDisplayName());
+        return DiscordMessage.builder().content(content).embeds(List.of(embed)).build();
     }
 }
