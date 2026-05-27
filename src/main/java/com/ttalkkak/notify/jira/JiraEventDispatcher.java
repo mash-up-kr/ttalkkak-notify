@@ -16,10 +16,13 @@ public class JiraEventDispatcher {
     private final List<JiraEventHandler> handlers;
 
     public Optional<DiscordMessage> dispatch(JiraWebhookPayload payload) {
-        log.debug("Dispatching Jira event: {}", payload.getWebhookEvent());
-        return handlers.stream()
+        Optional<DiscordMessage> result = handlers.stream()
             .filter(h -> h.supports(payload))
             .findFirst()
             .map(h -> h.handle(payload));
+        if (result.isEmpty()) {
+            log.warn("Jira 웹훅 — 처리할 수 없는 이벤트 타입 (event: {})", payload.getWebhookEvent());
+        }
+        return result;
     }
 }

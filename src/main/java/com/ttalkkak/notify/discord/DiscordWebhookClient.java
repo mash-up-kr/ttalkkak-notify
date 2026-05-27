@@ -35,15 +35,27 @@ public class DiscordWebhookClient {
     }
 
     private void send(String url, DiscordMessage message) {
-        try {
-            restClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(message)
-                .retrieve()
-                .toBodilessEntity();
-        } catch (Exception e) {
-            log.error("Failed to send Discord message to {}", url, e);
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            try {
+                restClient.post()
+                        .uri(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(message)
+                        .retrieve()
+                        .toBodilessEntity();
+                return;
+            } catch (Exception e) {
+                if (attempt < 2) {
+                    log.warn("Discord 전송 실패 — 재시도합니다");
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    log.error("Discord 전송 실패 — 재시도 1회, 최종 실패", e);
+                }
+            }
         }
     }
 }
