@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -39,14 +38,21 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
         String pageTitle = page != null ? page.getTitle() : "알 수 없음";
         String commentUrl = comment != null ? comment.getSelf() : null;
 
-        // Confluence 페이로드에 표시 이름이 없어 매핑 실패 시 null로 폴백 (이름 없이 본문만 표시)
+        // Confluence 페이로드에 표시 이름이 없어 매핑 실패 시 null로 폴백
         String authorName = userMappingRepository.findName(payload.getUserAccountId()).orElse(null);
 
         String rawHtml = comment != null ? confluenceApiClient.fetchCommentBody(comment.getId()) : null;
 
-        String pingContent = rawHtml != null ? extractMentionPings(rawHtml) : null;
-        String processedBody = rawHtml != null ? stripAndTruncate(rawHtml) : null;
+        String content = null;
+        if (rawHtml != null) {
+            String pingPart = extractMentionPings(rawHtml);
+            if (pingPart != null) {
+                String authorPart = authorName != null ? authorName + "님이 댓글에서 " : "댓글에서 ";
+                content = authorPart + pingPart + " 님을 언급했습니다.";
+            }
+        }
 
+        String processedBody = rawHtml != null ? stripAndTruncate(rawHtml) : null;
         String description = null;
         if (processedBody != null && !processedBody.isEmpty()) {
             description = authorName != null ? authorName + ": " + processedBody : processedBody;
@@ -58,8 +64,6 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
             .color(EmbedColor.CONFLUENCE_COMMENT)
             .url(commentUrl)
             .build();
-
-        String content = pingContent != null ? pingContent + " 확인 부탁드려요!" : null;
 
         return DiscordMessage.builder().content(content).embeds(List.of(embed)).build();
     }
@@ -81,7 +85,7 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
         StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
             String accountId = matcher.group(1);
-            String name = userMappingRepository.findName(accountId).orElse("@" + accountId);
+            String name = "@" + userMappingRepository.findName(accountId).orElse(accountId);
             matcher.appendReplacement(sb, Matcher.quoteReplacement(name));
         }
         matcher.appendTail(sb);
