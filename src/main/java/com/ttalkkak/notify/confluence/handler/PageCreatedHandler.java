@@ -6,13 +6,18 @@ import com.ttalkkak.notify.discord.model.DiscordEmbed;
 import com.ttalkkak.notify.discord.model.DiscordField;
 import com.ttalkkak.notify.discord.model.DiscordMessage;
 import com.ttalkkak.notify.discord.model.EmbedColor;
+import com.ttalkkak.notify.user.UserMappingRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class PageCreatedHandler implements ConfluenceEventHandler {
+
+    private final UserMappingRepository userMappingRepository;
 
     @Override
     public boolean supports(ConfluenceWebhookPayload payload) {
@@ -24,19 +29,19 @@ public class PageCreatedHandler implements ConfluenceEventHandler {
         ConfluenceWebhookPayload.Page page = payload.getPage();
 
         List<DiscordField> fields = new ArrayList<>();
-        if (page.getSpace() != null) {
+        if (page.getSpaceKey() != null) {
             fields.add(DiscordField.builder()
-                .name("스페이스").value(page.getSpace().getName()).inline(true).build());
+                .name("스페이스").value(page.getSpaceKey()).inline(true).build());
         }
-        if (page.getVersion() != null && page.getVersion().getBy() != null) {
+        userMappingRepository.findName(payload.getUserAccountId()).ifPresent(name ->
             fields.add(DiscordField.builder()
-                .name("작성자").value(page.getVersion().getBy().getDisplayName()).inline(true).build());
-        }
+                .name("작성자").value(name).inline(true).build())
+        );
 
         DiscordEmbed embed = DiscordEmbed.builder()
             .title("📄 새 문서: " + page.getTitle())
             .color(EmbedColor.CONFLUENCE_PAGE_CREATED)
-            .url(page.getWebUrl())
+            .url(page.getSelf())
             .fields(fields.isEmpty() ? null : fields)
             .build();
 

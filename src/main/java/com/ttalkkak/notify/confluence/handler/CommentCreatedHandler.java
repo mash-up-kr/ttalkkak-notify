@@ -6,13 +6,18 @@ import com.ttalkkak.notify.discord.model.DiscordEmbed;
 import com.ttalkkak.notify.discord.model.DiscordField;
 import com.ttalkkak.notify.discord.model.DiscordMessage;
 import com.ttalkkak.notify.discord.model.EmbedColor;
+import com.ttalkkak.notify.user.UserMappingRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Component("confluenceCommentCreatedHandler")
+@Component
+@RequiredArgsConstructor
 public class CommentCreatedHandler implements ConfluenceEventHandler {
+
+    private final UserMappingRepository userMappingRepository;
 
     @Override
     public boolean supports(ConfluenceWebhookPayload payload) {
@@ -22,25 +27,25 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
     @Override
     public DiscordMessage handle(ConfluenceWebhookPayload payload) {
         ConfluenceWebhookPayload.Comment comment = payload.getComment();
-        ConfluenceWebhookPayload.Page page = comment != null ? comment.getPage() : null;
+        ConfluenceWebhookPayload.Page page = comment != null ? comment.getParent() : null;
 
         String pageTitle = page != null ? page.getTitle() : "알 수 없음";
-        String pageUrl = page != null ? page.getWebUrl() : null;
+        String commentUrl = comment != null ? comment.getSelf() : null;
 
         List<DiscordField> fields = new ArrayList<>();
-        if (page != null && page.getSpace() != null) {
+        if (page != null && page.getSpaceKey() != null) {
             fields.add(DiscordField.builder()
-                .name("스페이스").value(page.getSpace().getName()).inline(true).build());
+                .name("스페이스").value(page.getSpaceKey()).inline(true).build());
         }
-        if (comment != null && comment.getAuthor() != null) {
+        userMappingRepository.findName(payload.getUserAccountId()).ifPresent(name ->
             fields.add(DiscordField.builder()
-                .name("작성자").value(comment.getAuthor().getDisplayName()).inline(true).build());
-        }
+                .name("작성자").value(name).inline(true).build())
+        );
 
         DiscordEmbed embed = DiscordEmbed.builder()
             .title("💬 댓글: " + pageTitle)
             .color(EmbedColor.CONFLUENCE_COMMENT)
-            .url(pageUrl)
+            .url(commentUrl)
             .fields(fields.isEmpty() ? null : fields)
             .build();
 

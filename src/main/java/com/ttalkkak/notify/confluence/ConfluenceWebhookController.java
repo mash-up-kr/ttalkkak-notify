@@ -35,8 +35,6 @@ public class ConfluenceWebhookController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        log.info("Confluence 웹훅 페이로드: {}", rawBody);
-
         ConfluenceWebhookPayload payload;
         try {
             payload = objectMapper.readValue(rawBody, ConfluenceWebhookPayload.class);
