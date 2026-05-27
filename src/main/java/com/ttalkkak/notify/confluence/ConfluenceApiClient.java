@@ -13,7 +13,6 @@ import java.util.Base64;
 public class ConfluenceApiClient {
 
     private static final String BASE_URL = "https://ttalkkak.atlassian.net";
-    private static final int MAX_BODY_LENGTH = 500;
 
     private final RestClient restClient;
 
@@ -35,11 +34,7 @@ public class ConfluenceApiClient {
                 .body(CommentResponse.class);
 
             if (response == null || response.getBody() == null) return null;
-            String value = response.getBody().getStorage().getValue();
-            if (value == null) return null;
-
-            String text = value.replaceAll("<[^>]+>", "").trim();
-            return text.length() > MAX_BODY_LENGTH ? text.substring(0, MAX_BODY_LENGTH) + "..." : text;
+            return response.getBody().getStorage().getValue();
         } catch (Exception e) {
             log.warn("Confluence 댓글 본문 조회 실패 [commentId={}]: {}", commentId, e.getMessage());
             return null;
