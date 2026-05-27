@@ -16,10 +16,13 @@ public class ConfluenceEventDispatcher {
     private final List<ConfluenceEventHandler> handlers;
 
     public Optional<DiscordMessage> dispatch(ConfluenceWebhookPayload payload) {
-        log.debug("Dispatching Confluence event: {}", payload.getEvent());
-        return handlers.stream()
+        Optional<DiscordMessage> result = handlers.stream()
             .filter(h -> h.supports(payload))
             .findFirst()
             .map(h -> h.handle(payload));
+        if (result.isEmpty()) {
+            log.warn("Confluence 웹훅 — 처리할 수 없는 이벤트 타입 (event: {})", payload.getEvent());
+        }
+        return result;
     }
 }
