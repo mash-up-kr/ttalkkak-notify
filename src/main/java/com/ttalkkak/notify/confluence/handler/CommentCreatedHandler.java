@@ -10,16 +10,18 @@ import com.ttalkkak.notify.user.UserMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class CommentCreatedHandler implements ConfluenceEventHandler {
 
     private static final Pattern MENTION_PATTERN = Pattern.compile("<ri:user ri:account-id=\"([^\"]+)\"[^/]*/>");
-    private static final int MAX_BODY_LENGTH = 500;
+    private static final int MAX_BODY_LENGTH = 100;
 
     private final UserMappingRepository userMappingRepository;
     private final ConfluenceApiClient confluenceApiClient;
@@ -41,7 +43,9 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
         String authorName = userMappingRepository.findName(payload.getUserAccountId()).orElse(null);
 
         String rawHtml = comment != null ? confluenceApiClient.fetchCommentBody(comment.getId()) : null;
-        String processedBody = rawHtml != null ? processBody(rawHtml) : null;
+
+        String pingContent = rawHtml != null ? extractMentionPings(rawHtml) : null;
+        String processedBody = rawHtml != null ? stripAndTruncate(rawHtml) : null;
 
         String description = null;
         if (processedBody != null && !processedBody.isEmpty()) {
@@ -55,18 +59,30 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
             .url(commentUrl)
             .build();
 
-        return DiscordMessage.builder().embeds(List.of(embed)).build();
+        String content = pingContent != null ? pingContent + " 확인 부탁드려요!" : null;
+
+        return DiscordMessage.builder().content(content).embeds(List.of(embed)).build();
     }
 
-    private String processBody(String storageHtml) {
+    private String extractMentionPings(String storageHtml) {
+        Matcher matcher = MENTION_PATTERN.matcher(storageHtml);
+        List<String> pings = new ArrayList<>();
+        while (matcher.find()) {
+            String accountId = matcher.group(1);
+            userMappingRepository.findDiscordId(accountId)
+                .map(id -> "<@" + id + ">")
+                .ifPresent(pings::add);
+        }
+        return pings.isEmpty() ? null : String.join(", ", pings);
+    }
+
+    private String stripAndTruncate(String storageHtml) {
         Matcher matcher = MENTION_PATTERN.matcher(storageHtml);
         StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
             String accountId = matcher.group(1);
-            String replacement = userMappingRepository.findDiscordId(accountId)
-                .map(id -> "<@" + id + ">")
-                .orElseGet(() -> userMappingRepository.findName(accountId).orElse("@" + accountId));
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+            String name = userMappingRepository.findName(accountId).orElse("@" + accountId);
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(name));
         }
         matcher.appendTail(sb);
 
