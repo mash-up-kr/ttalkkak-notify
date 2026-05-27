@@ -12,3 +12,8 @@ discord:
   webhook:
     task: ${DISCORD_WEBHOOK_URL_TASK}
     docs: ${DISCORD_WEBHOOK_URL_DOCS}
+
+confluence:
+  api:
+    email: ${CONFLUENCE_API_EMAIL}
+    token: ${CONFLUENCE_COMMENT_READ_API_TOKEN}
