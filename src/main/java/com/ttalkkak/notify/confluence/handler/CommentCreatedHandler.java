@@ -37,6 +37,7 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
         String pageTitle = page != null ? page.getTitle() : "알 수 없음";
         String commentUrl = comment != null ? comment.getSelf() : null;
 
+        // Confluence 페이로드에 표시 이름이 없어 매핑 실패 시 null로 폴백 (이름 없이 본문만 표시)
         String authorName = userMappingRepository.findName(payload.getUserAccountId()).orElse(null);
 
         String rawHtml = comment != null ? confluenceApiClient.fetchCommentBody(comment.getId()) : null;

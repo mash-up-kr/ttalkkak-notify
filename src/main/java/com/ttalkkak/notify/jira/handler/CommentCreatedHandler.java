@@ -52,7 +52,8 @@ public class CommentCreatedHandler implements JiraEventHandler {
         String truncatedBody = body.length() > 500 ? body.substring(0, 500) + "..." : body;
 
         String authorName = comment != null && comment.getAuthor() != null
-            ? comment.getAuthor().getDisplayName() : "알 수 없음";
+            ? userMappingRepository.findName(comment.getAuthor().getAccountId()).orElse(comment.getAuthor().getDisplayName())
+            : "알 수 없음";
         String description = truncatedBody.isEmpty() ? null : authorName + ": " + truncatedBody;
 
         DiscordEmbed embed = DiscordEmbed.builder()
