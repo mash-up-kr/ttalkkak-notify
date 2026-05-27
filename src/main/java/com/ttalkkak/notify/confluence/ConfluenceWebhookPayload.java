@@ -1,64 +1,38 @@
 package com.ttalkkak.notify.confluence;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConfluenceWebhookPayload {
 
-    private String event;
+    private String userAccountId;
+    private String updateTrigger;
     private Page page;
     private Comment comment;
+
+    public String getEvent() {
+        if (comment != null) return "comment_created";
+        if (page != null && "edit_page".equals(updateTrigger)) return "page_updated";
+        if (page != null) return "page_created";
+        return null;
+    }
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Page {
         private String id;
         private String title;
-        private Space space;
-        @JsonProperty("_links")
-        private Links links;
-        private Version version;
-
-        public String getWebUrl() {
-            if (links == null || links.getWebui() == null) return null;
-            return "https://ttalkkak.atlassian.net/wiki" + links.getWebui();
-        }
-    }
-
-    @Getter
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Space {
-        private String key;
-        private String name;
-    }
-
-    @Getter
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Links {
-        private String webui;
-    }
-
-    @Getter
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Version {
-        private User by;
-    }
-
-    @Getter
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class User {
-        private String accountId;
-        private String displayName;
+        private String spaceKey;
+        private String self;
     }
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Comment {
-        private String body;
-        private User author;
-        private Page page;
+        private String id;
+        private String self;
+        private Page parent;
     }
 }
