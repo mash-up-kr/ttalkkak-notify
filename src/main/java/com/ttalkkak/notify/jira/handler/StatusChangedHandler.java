@@ -6,13 +6,18 @@ import com.ttalkkak.notify.discord.model.DiscordMessage;
 import com.ttalkkak.notify.discord.model.EmbedColor;
 import com.ttalkkak.notify.jira.JiraEventHandler;
 import com.ttalkkak.notify.jira.JiraWebhookPayload;
+import com.ttalkkak.notify.user.UserMappingRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class StatusChangedHandler implements JiraEventHandler {
+
+    private final UserMappingRepository userMappingRepository;
 
     @Override
     public boolean supports(JiraWebhookPayload payload) {
@@ -38,8 +43,10 @@ public class StatusChangedHandler implements JiraEventHandler {
         embedFields.add(DiscordField.builder()
             .name("상태 변경").value(statusChangeValue).build());
         if (fields.getAssignee() != null) {
+            String assigneeName = userMappingRepository.findName(fields.getAssignee().getAccountId())
+                .orElse(fields.getAssignee().getDisplayName());
             embedFields.add(DiscordField.builder()
-                .name("담당자").value(fields.getAssignee().getDisplayName()).inline(true).build());
+                .name("담당자").value(assigneeName).inline(true).build());
         }
         if (fields.getPriority() != null) {
             embedFields.add(DiscordField.builder()

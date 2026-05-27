@@ -80,6 +80,7 @@ public class JiraWebhookPayload {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ChangelogItem {
         private String field;
+        private String from;
         private String fromString;
         @JsonProperty("toString")
         private String toValue;
