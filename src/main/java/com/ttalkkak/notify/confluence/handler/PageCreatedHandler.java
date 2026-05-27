@@ -29,10 +29,6 @@ public class PageCreatedHandler implements ConfluenceEventHandler {
         ConfluenceWebhookPayload.Page page = payload.getPage();
 
         List<DiscordField> fields = new ArrayList<>();
-        if (page.getSpaceKey() != null) {
-            fields.add(DiscordField.builder()
-                .name("스페이스").value(page.getSpaceKey()).inline(true).build());
-        }
         userMappingRepository.findName(payload.getUserAccountId()).ifPresent(name ->
             fields.add(DiscordField.builder()
                 .name("작성자").value(name).inline(true).build())

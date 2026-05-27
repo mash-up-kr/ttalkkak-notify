@@ -1,5 +1,6 @@
 package com.ttalkkak.notify.confluence.handler;
 
+import com.ttalkkak.notify.confluence.ConfluenceApiClient;
 import com.ttalkkak.notify.confluence.ConfluenceEventHandler;
 import com.ttalkkak.notify.confluence.ConfluenceWebhookPayload;
 import com.ttalkkak.notify.discord.model.DiscordEmbed;
@@ -18,6 +19,7 @@ import java.util.List;
 public class CommentCreatedHandler implements ConfluenceEventHandler {
 
     private final UserMappingRepository userMappingRepository;
+    private final ConfluenceApiClient confluenceApiClient;
 
     @Override
     public boolean supports(ConfluenceWebhookPayload payload) {
@@ -32,11 +34,9 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
         String pageTitle = page != null ? page.getTitle() : "알 수 없음";
         String commentUrl = comment != null ? comment.getSelf() : null;
 
+        String bodyText = comment != null ? confluenceApiClient.fetchCommentBody(comment.getId()) : null;
+
         List<DiscordField> fields = new ArrayList<>();
-        if (page != null && page.getSpaceKey() != null) {
-            fields.add(DiscordField.builder()
-                .name("스페이스").value(page.getSpaceKey()).inline(true).build());
-        }
         userMappingRepository.findName(payload.getUserAccountId()).ifPresent(name ->
             fields.add(DiscordField.builder()
                 .name("작성자").value(name).inline(true).build())
@@ -44,6 +44,7 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
 
         DiscordEmbed embed = DiscordEmbed.builder()
             .title("💬 댓글: " + pageTitle)
+            .description(bodyText)
             .color(EmbedColor.CONFLUENCE_COMMENT)
             .url(commentUrl)
             .fields(fields.isEmpty() ? null : fields)
