@@ -13,7 +13,7 @@ import java.util.Base64;
 public class ConfluenceApiClient {
 
     private static final String BASE_URL = "https://ttalkkak.atlassian.net";
-    private static final int MAX_BODY_LENGTH = 200;
+    private static final int MAX_BODY_LENGTH = 500;
 
     private final RestClient restClient;
 
