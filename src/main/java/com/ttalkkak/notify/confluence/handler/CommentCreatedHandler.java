@@ -3,6 +3,7 @@ package com.ttalkkak.notify.confluence.handler;
 import com.ttalkkak.notify.confluence.ConfluenceApiClient;
 import com.ttalkkak.notify.confluence.ConfluenceEventHandler;
 import com.ttalkkak.notify.confluence.ConfluenceWebhookPayload;
+import com.ttalkkak.notify.discord.CommentBodySanitizer;
 import com.ttalkkak.notify.discord.model.DiscordEmbed;
 import com.ttalkkak.notify.discord.model.DiscordMessage;
 import com.ttalkkak.notify.discord.model.EmbedColor;
@@ -90,7 +91,7 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
         }
         matcher.appendTail(sb);
 
-        String text = sb.toString().replaceAll("<[^>]+>", "").trim();
+        String text = CommentBodySanitizer.fromConfluenceStorageHtml(sb.toString());
         return text.length() > MAX_BODY_LENGTH ? text.substring(0, MAX_BODY_LENGTH) + "..." : text;
     }
 }
