@@ -9,6 +9,7 @@ public class ConfluenceWebhookPayload {
 
     private String userAccountId;
     private String updateTrigger;
+    private Long timestamp;
     private Page page;
     private Comment comment;
 
@@ -19,6 +20,20 @@ public class ConfluenceWebhookPayload {
         if (page != null && "publish_page".equals(updateTrigger)) return "live_doc_published";
         if (page != null) return "page_created";
         return null;
+    }
+
+    public String getEventKey() {
+        String event = getEvent();
+        if (event == null || timestamp == null) {
+            return null;
+        }
+        String identifier = comment != null ? comment.getId()
+                : page != null ? page.getId()
+                : null;
+        if (identifier == null) {
+            return null;
+        }
+        return event + ":" + identifier + ":" + timestamp;
     }
 
     @Getter

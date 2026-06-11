@@ -1,6 +1,7 @@
 package com.ttalkkak.notify.confluence;
 
 import com.ttalkkak.notify.discord.DiscordWebhookClient;
+import com.ttalkkak.notify.webhook.WebhookDeduplicator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ public class ConfluenceWebhookController {
     private final ConfluenceWebhookProperties properties;
     private final ConfluenceEventDispatcher dispatcher;
     private final DiscordWebhookClient discordWebhookClient;
+    private final WebhookDeduplicator deduplicator;
     private final ObjectMapper objectMapper;
 
     @PostMapping("/webhook/confluence")
@@ -45,6 +47,12 @@ public class ConfluenceWebhookController {
 
         // TODO: live_doc_published 페이로드 구조 검증 후 제거
         log.info("Confluence 웹훅 페이로드 (event={}): {}", payload.getEvent(), rawBody);
+      
+        String eventKey = payload.getEventKey();
+        if (eventKey != null && deduplicator.isDuplicate(eventKey)) {
+            log.info("Confluence 웹훅 — 중복 이벤트 스킵 [key={}]", eventKey);
+            return ResponseEntity.ok().build();
+        }
 
         dispatcher.dispatch(payload)
             .ifPresent(discordWebhookClient::sendToDocs);
