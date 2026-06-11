@@ -3,8 +3,12 @@ package com.ttalkkak.notify.discord;
 import com.ttalkkak.notify.discord.model.DiscordMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+
+import java.net.http.HttpClient;
+import java.time.Duration;
 
 @Component
 @Slf4j
@@ -15,7 +19,17 @@ public class DiscordWebhookClient {
 
     public DiscordWebhookClient(DiscordWebhookProperties properties) {
         this.properties = properties;
-        this.restClient = RestClient.create();
+
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(2))
+                .build();
+
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(Duration.ofSeconds(5));
+
+        this.restClient = RestClient.builder()
+                .requestFactory(requestFactory)
+                .build();
     }
 
     public void sendToTask(DiscordMessage message) {

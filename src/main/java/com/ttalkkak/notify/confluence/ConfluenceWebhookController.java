@@ -1,6 +1,7 @@
 package com.ttalkkak.notify.confluence;
 
 import com.ttalkkak.notify.discord.DiscordWebhookClient;
+import com.ttalkkak.notify.webhook.WebhookDeduplicator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ public class ConfluenceWebhookController {
     private final ConfluenceWebhookProperties properties;
     private final ConfluenceEventDispatcher dispatcher;
     private final DiscordWebhookClient discordWebhookClient;
+    private final WebhookDeduplicator deduplicator;
     private final ObjectMapper objectMapper;
 
     @PostMapping("/webhook/confluence")
@@ -41,6 +43,12 @@ public class ConfluenceWebhookController {
         } catch (Exception e) {
             log.error("Confluence 웹훅 페이로드 파싱 실패 [ip={}]: {}", remoteIp, e.getMessage());
             throw e;
+        }
+
+        String eventKey = payload.getEventKey();
+        if (eventKey != null && deduplicator.isDuplicate(eventKey)) {
+            log.info("Confluence 웹훅 — 중복 이벤트 스킵 [key={}]", eventKey);
+            return ResponseEntity.ok().build();
         }
 
         dispatcher.dispatch(payload)

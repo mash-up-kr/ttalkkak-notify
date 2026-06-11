@@ -2,6 +2,7 @@ package com.ttalkkak.notify.jira;
 
 import com.ttalkkak.notify.discord.DiscordWebhookClient;
 import com.ttalkkak.notify.security.HmacSignatureVerifier;
+import com.ttalkkak.notify.webhook.WebhookDeduplicator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class JiraWebhookController {
     private final HmacSignatureVerifier signatureVerifier;
     private final JiraEventDispatcher dispatcher;
     private final DiscordWebhookClient discordWebhookClient;
+    private final WebhookDeduplicator deduplicator;
     private final ObjectMapper objectMapper;
 
     @PostMapping("/webhook/jira")
@@ -41,6 +43,12 @@ public class JiraWebhookController {
         } catch (Exception e) {
             log.error("Jira 웹훅 페이로드 파싱 실패 [ip={}]: {}", remoteIp, e.getMessage());
             throw e;
+        }
+
+        String eventKey = payload.getEventKey();
+        if (eventKey != null && deduplicator.isDuplicate(eventKey)) {
+            log.info("Jira 웹훅 — 중복 이벤트 스킵 [key={}]", eventKey);
+            return ResponseEntity.ok().build();
         }
 
         dispatcher.dispatch(payload)

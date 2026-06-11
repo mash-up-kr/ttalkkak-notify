@@ -12,9 +12,23 @@ import java.util.Map;
 public class JiraWebhookPayload {
 
     private String webhookEvent;
+    private Long timestamp;
     private Issue issue;
     private Comment comment;
     private Changelog changelog;
+
+    public String getEventKey() {
+        if (webhookEvent == null || timestamp == null) {
+            return null;
+        }
+        String identifier = comment != null ? comment.getId()
+                : issue != null ? issue.getKey()
+                : null;
+        if (identifier == null) {
+            return null;
+        }
+        return webhookEvent + ":" + identifier + ":" + timestamp;
+    }
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -66,6 +80,7 @@ public class JiraWebhookPayload {
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Comment {
+        private String id;
         private String body;
         private User author;
     }

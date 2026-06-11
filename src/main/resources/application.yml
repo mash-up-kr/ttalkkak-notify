@@ -1,6 +1,11 @@
 spring:
   application:
     name: ttalkkak-notify
+  lifecycle:
+    timeout-per-shutdown-phase: 15s
+
+server:
+  shutdown: graceful
 
 webhook:
   jira:
