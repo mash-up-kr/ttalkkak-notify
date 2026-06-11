@@ -10,6 +10,7 @@ public class ConfluenceWebhookPayload {
     private String userAccountId;
     private String updateTrigger;
     private Long timestamp;
+    private Boolean suppressNotifications;
     private Page page;
     private Comment comment;
 

@@ -45,6 +45,11 @@ public class ConfluenceWebhookController {
             throw e;
         }
 
+        if (Boolean.TRUE.equals(payload.getSuppressNotifications())) {
+            log.info("Confluence 웹훅 — 알림 억제(suppressNotifications) 이벤트 스킵 (event: {})", payload.getEvent());
+            return ResponseEntity.ok().build();
+        }
+
         String eventKey = payload.getEventKey();
         if (eventKey != null && deduplicator.isDuplicate(eventKey)) {
             log.info("Confluence 웹훅 — 중복 이벤트 스킵 [key={}]", eventKey);
