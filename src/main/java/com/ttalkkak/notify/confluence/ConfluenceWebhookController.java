@@ -43,6 +43,9 @@ public class ConfluenceWebhookController {
             throw e;
         }
 
+        // TODO: live_doc_published 페이로드 구조 검증 후 제거
+        log.info("Confluence 웹훅 페이로드 (event={}): {}", payload.getEvent(), rawBody);
+
         dispatcher.dispatch(payload)
             .ifPresent(discordWebhookClient::sendToDocs);
 
