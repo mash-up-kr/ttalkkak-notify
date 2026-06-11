@@ -1,5 +1,6 @@
 package com.ttalkkak.notify.jira.handler;
 
+import com.ttalkkak.notify.discord.CommentBodySanitizer;
 import com.ttalkkak.notify.discord.model.DiscordEmbed;
 import com.ttalkkak.notify.discord.model.DiscordMessage;
 import com.ttalkkak.notify.discord.model.EmbedColor;
@@ -85,7 +86,7 @@ public class CommentCreatedHandler implements JiraEventHandler {
         }
         matcher.appendTail(sb);
 
-        String text = sb.toString().trim();
+        String text = CommentBodySanitizer.fromJiraWikiMarkup(sb.toString().trim());
         return text.length() > MAX_BODY_LENGTH ? text.substring(0, MAX_BODY_LENGTH) + "..." : text;
     }
 }
