@@ -16,6 +16,8 @@ public class ConfluenceWebhookPayload {
     public String getEvent() {
         if (comment != null) return "comment_created";
         if (page != null && "edit_page".equals(updateTrigger)) return "page_updated";
+        if (page != null && "live".equals(page.getSubType())) return "live_doc_created";
+        if (page != null && "publish_page".equals(updateTrigger)) return "live_doc_published";
         if (page != null) return "page_created";
         return null;
     }
@@ -41,6 +43,7 @@ public class ConfluenceWebhookPayload {
         private String title;
         private String spaceKey;
         private String self;
+        private String subType;
     }
 
     @Getter

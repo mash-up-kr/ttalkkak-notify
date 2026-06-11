@@ -10,6 +10,8 @@ public final class EmbedColor {
     public static final int CONFLUENCE_PAGE_CREATED  = 0x0052CC;
     public static final int CONFLUENCE_PAGE_UPDATED  = 0x0065FF;
     public static final int CONFLUENCE_COMMENT       = 0x00C7E6;
+    public static final int CONFLUENCE_LIVE_DOC_CREATED   = 0x2ECC71;
+    public static final int CONFLUENCE_LIVE_DOC_PUBLISHED = 0x36B37E;
 
     private EmbedColor() {}
 }

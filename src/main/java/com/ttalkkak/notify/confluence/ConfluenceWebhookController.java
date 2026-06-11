@@ -45,6 +45,9 @@ public class ConfluenceWebhookController {
             throw e;
         }
 
+        // TODO: live_doc_published 페이로드 구조 검증 후 제거
+        log.info("Confluence 웹훅 페이로드 (event={}): {}", payload.getEvent(), rawBody);
+      
         String eventKey = payload.getEventKey();
         if (eventKey != null && deduplicator.isDuplicate(eventKey)) {
             log.info("Confluence 웹훅 — 중복 이벤트 스킵 [key={}]", eventKey);
