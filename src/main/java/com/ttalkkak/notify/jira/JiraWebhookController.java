@@ -1,5 +1,8 @@
 package com.ttalkkak.notify.jira;
 
+import com.ttalkkak.notify.chat.ChatBrokerClient;
+import com.ttalkkak.notify.chat.ChatMessageFormatter;
+import com.ttalkkak.notify.discord.DiscordMessageFormatter;
 import com.ttalkkak.notify.discord.DiscordWebhookClient;
 import com.ttalkkak.notify.security.HmacSignatureVerifier;
 import com.ttalkkak.notify.webhook.WebhookDeduplicator;
@@ -14,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -23,6 +29,9 @@ public class JiraWebhookController {
     private final HmacSignatureVerifier signatureVerifier;
     private final JiraEventDispatcher dispatcher;
     private final DiscordWebhookClient discordWebhookClient;
+    private final DiscordMessageFormatter discordMessageFormatter;
+    private final ChatBrokerClient chatBrokerClient;
+    private final ChatMessageFormatter chatMessageFormatter;
     private final WebhookDeduplicator deduplicator;
     private final ObjectMapper objectMapper;
 
@@ -51,8 +60,15 @@ public class JiraWebhookController {
             return ResponseEntity.ok().build();
         }
 
-        dispatcher.dispatch(payload)
-            .ifPresent(discordWebhookClient::sendToTask);
+        dispatcher.dispatch(payload).ifPresent(event -> {
+            try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                var discordFuture = CompletableFuture.runAsync(
+                    () -> discordWebhookClient.sendToTask(discordMessageFormatter.format(event)), executor);
+                var chatFuture = CompletableFuture.runAsync(
+                    () -> chatBrokerClient.send(chatMessageFormatter.format(event)), executor);
+                CompletableFuture.allOf(discordFuture, chatFuture).join();
+            }
+        });
 
         return ResponseEntity.ok().build();
     }

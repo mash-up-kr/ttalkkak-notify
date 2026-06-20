@@ -2,10 +2,9 @@ package com.ttalkkak.notify.confluence.handler;
 
 import com.ttalkkak.notify.confluence.ConfluenceEventHandler;
 import com.ttalkkak.notify.confluence.ConfluenceWebhookPayload;
-import com.ttalkkak.notify.discord.model.DiscordEmbed;
-import com.ttalkkak.notify.discord.model.DiscordField;
-import com.ttalkkak.notify.discord.model.DiscordMessage;
-import com.ttalkkak.notify.discord.model.EmbedColor;
+import com.ttalkkak.notify.notification.EventType;
+import com.ttalkkak.notify.notification.NotificationEvent;
+import com.ttalkkak.notify.notification.NotificationField;
 import com.ttalkkak.notify.user.UserMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -25,22 +24,21 @@ public class PageUpdatedHandler implements ConfluenceEventHandler {
     }
 
     @Override
-    public DiscordMessage handle(ConfluenceWebhookPayload payload) {
+    public NotificationEvent handle(ConfluenceWebhookPayload payload) {
         ConfluenceWebhookPayload.Page page = payload.getPage();
 
-        List<DiscordField> fields = new ArrayList<>();
+        List<NotificationField> fields = new ArrayList<>();
         userMappingRepository.findName(payload.getUserAccountId()).ifPresent(name ->
-            fields.add(DiscordField.builder()
-                .name("수정자").value(name).inline(true).build())
+            fields.add(new NotificationField("수정자", name, true))
         );
 
-        DiscordEmbed embed = DiscordEmbed.builder()
-            .title("✏️ 문서 수정: " + page.getTitle())
-            .color(EmbedColor.CONFLUENCE_PAGE_UPDATED)
-            .url(page.getSelf())
-            .fields(fields.isEmpty() ? null : fields)
-            .build();
-
-        return DiscordMessage.builder().embeds(List.of(embed)).build();
+        return new NotificationEvent(
+            EventType.CONFLUENCE_PAGE_UPDATED,
+            "✏️ 문서 수정: " + page.getTitle(),
+            null,
+            page.getSelf(),
+            fields.isEmpty() ? null : fields,
+            null
+        );
     }
 }
