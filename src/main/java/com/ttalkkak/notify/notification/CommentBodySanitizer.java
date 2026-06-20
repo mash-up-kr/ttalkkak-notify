@@ -1,12 +1,12 @@
-package com.ttalkkak.notify.discord;
+package com.ttalkkak.notify.notification;
 
 import lombok.experimental.UtilityClass;
 
 import java.util.regex.Pattern;
 
 /**
- * Jira wiki markup / Confluence storage HTML 댓글 본문을 Discord 임베드 description에 표시할
- * 평문(서식 제거, 줄바꿈은 공백으로 치환)으로 정규화한다.
+ * Jira wiki markup / Confluence storage HTML 댓글 본문을 평문으로 정규화한다.
+ * (서식 제거, 줄바꿈은 공백으로 치환)
  */
 @UtilityClass
 public class CommentBodySanitizer {

@@ -1,6 +1,6 @@
 package com.ttalkkak.notify.jira.handler;
 
-import com.ttalkkak.notify.discord.CommentBodySanitizer;
+import com.ttalkkak.notify.notification.CommentBodySanitizer;
 import com.ttalkkak.notify.jira.JiraEventHandler;
 import com.ttalkkak.notify.jira.JiraWebhookPayload;
 import com.ttalkkak.notify.notification.EventType;
@@ -69,7 +69,7 @@ public class CommentCreatedHandler implements JiraEventHandler {
         while (matcher.find()) {
             String accountId = matcher.group(1);
             users.add(userMappingRepository.findUser(accountId)
-                .orElseGet(() -> new UserInfo(accountId, accountId, null)));
+                .orElseGet(() -> new UserInfo(null, accountId, null)));
         }
         return users;
     }

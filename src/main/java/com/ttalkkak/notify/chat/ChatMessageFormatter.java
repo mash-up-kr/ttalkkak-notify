@@ -69,7 +69,7 @@ public class ChatMessageFormatter {
             .filter(name -> name != null)
             .collect(Collectors.joining("님, "));
         if (names.isBlank()) return null;
-        return mention.prefix() + names + "님을 언급했습니다.";
+        return mention.prefix() + names + mention.suffix().stripLeading();
     }
 
     private String findFieldValue(List<NotificationField> fields, String name) {

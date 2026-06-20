@@ -3,7 +3,7 @@ package com.ttalkkak.notify.confluence.handler;
 import com.ttalkkak.notify.confluence.ConfluenceApiClient;
 import com.ttalkkak.notify.confluence.ConfluenceEventHandler;
 import com.ttalkkak.notify.confluence.ConfluenceWebhookPayload;
-import com.ttalkkak.notify.discord.CommentBodySanitizer;
+import com.ttalkkak.notify.notification.CommentBodySanitizer;
 import com.ttalkkak.notify.notification.EventType;
 import com.ttalkkak.notify.notification.Mention;
 import com.ttalkkak.notify.notification.NotificationEvent;
@@ -73,7 +73,7 @@ public class CommentCreatedHandler implements ConfluenceEventHandler {
         while (matcher.find()) {
             String accountId = matcher.group(1);
             users.add(userMappingRepository.findUser(accountId)
-                .orElseGet(() -> new UserInfo(accountId, accountId, null)));
+                .orElseGet(() -> new UserInfo(null, accountId, null)));
         }
         return users;
     }
