@@ -15,7 +15,7 @@ discord:
 
 chat:
   broker:
-    url: ${CHAT}
+    url: ${CHAT_URL}
     token: ${CHAT_BROKER_TOKEN}
     target: ${CHAT_TARGET}
 
