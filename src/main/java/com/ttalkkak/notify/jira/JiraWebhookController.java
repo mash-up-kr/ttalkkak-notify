@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -58,8 +61,13 @@ public class JiraWebhookController {
         }
 
         dispatcher.dispatch(payload).ifPresent(event -> {
-            discordWebhookClient.sendToTask(discordMessageFormatter.format(event));
-            chatBrokerClient.send(chatMessageFormatter.format(event));
+            try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                var discordFuture = CompletableFuture.runAsync(
+                    () -> discordWebhookClient.sendToTask(discordMessageFormatter.format(event)), executor);
+                var chatFuture = CompletableFuture.runAsync(
+                    () -> chatBrokerClient.send(chatMessageFormatter.format(event)), executor);
+                CompletableFuture.allOf(discordFuture, chatFuture).join();
+            }
         });
 
         return ResponseEntity.ok().build();
