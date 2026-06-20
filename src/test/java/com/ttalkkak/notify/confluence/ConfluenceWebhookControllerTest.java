@@ -1,7 +1,11 @@
 package com.ttalkkak.notify.confluence;
 
+import com.ttalkkak.notify.chat.ChatBrokerClient;
+import com.ttalkkak.notify.chat.ChatMessageFormatter;
+import com.ttalkkak.notify.discord.DiscordMessageFormatter;
 import com.ttalkkak.notify.discord.DiscordWebhookClient;
-import com.ttalkkak.notify.discord.model.DiscordMessage;
+import com.ttalkkak.notify.notification.EventType;
+import com.ttalkkak.notify.notification.NotificationEvent;
 import com.ttalkkak.notify.webhook.WebhookDeduplicator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,10 +44,21 @@ class ConfluenceWebhookControllerTest {
     @MockitoBean
     private DiscordWebhookClient discordWebhookClient;
 
+    @MockitoBean
+    private DiscordMessageFormatter discordMessageFormatter;
+
+    @MockitoBean
+    private ChatBrokerClient chatBrokerClient;
+
+    @MockitoBean
+    private ChatMessageFormatter chatMessageFormatter;
+
     @BeforeEach
     void setUp() {
         given(properties.secret()).willReturn(TOKEN);
-        given(dispatcher.dispatch(any())).willReturn(Optional.of(DiscordMessage.builder().build()));
+        given(dispatcher.dispatch(any())).willReturn(Optional.of(
+            new NotificationEvent(EventType.CONFLUENCE_PAGE_CREATED, "제목", null, null, null, null)
+        ));
     }
 
     @Test

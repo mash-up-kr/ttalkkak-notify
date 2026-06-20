@@ -1,7 +1,11 @@
 package com.ttalkkak.notify.jira;
 
+import com.ttalkkak.notify.chat.ChatBrokerClient;
+import com.ttalkkak.notify.chat.ChatMessageFormatter;
+import com.ttalkkak.notify.discord.DiscordMessageFormatter;
 import com.ttalkkak.notify.discord.DiscordWebhookClient;
-import com.ttalkkak.notify.discord.model.DiscordMessage;
+import com.ttalkkak.notify.notification.EventType;
+import com.ttalkkak.notify.notification.NotificationEvent;
 import com.ttalkkak.notify.security.HmacSignatureVerifier;
 import com.ttalkkak.notify.webhook.WebhookDeduplicator;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,10 +48,21 @@ class JiraWebhookControllerTest {
     @MockitoBean
     private DiscordWebhookClient discordWebhookClient;
 
+    @MockitoBean
+    private DiscordMessageFormatter discordMessageFormatter;
+
+    @MockitoBean
+    private ChatBrokerClient chatBrokerClient;
+
+    @MockitoBean
+    private ChatMessageFormatter chatMessageFormatter;
+
     @BeforeEach
     void setUp() {
         given(properties.secret()).willReturn(SECRET);
-        given(dispatcher.dispatch(any())).willReturn(Optional.of(DiscordMessage.builder().build()));
+        given(dispatcher.dispatch(any())).willReturn(Optional.of(
+            new NotificationEvent(EventType.JIRA_ISSUE_CREATED, "제목", null, null, null, null)
+        ));
     }
 
     @Test
