@@ -1,5 +1,8 @@
 package com.ttalkkak.notify.confluence;
 
+import com.ttalkkak.notify.chat.ChatBrokerClient;
+import com.ttalkkak.notify.chat.ChatMessageFormatter;
+import com.ttalkkak.notify.discord.DiscordMessageFormatter;
 import com.ttalkkak.notify.discord.DiscordWebhookClient;
 import com.ttalkkak.notify.webhook.WebhookDeduplicator;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,9 @@ public class ConfluenceWebhookController {
     private final ConfluenceWebhookProperties properties;
     private final ConfluenceEventDispatcher dispatcher;
     private final DiscordWebhookClient discordWebhookClient;
+    private final DiscordMessageFormatter discordMessageFormatter;
+    private final ChatBrokerClient chatBrokerClient;
+    private final ChatMessageFormatter chatMessageFormatter;
     private final WebhookDeduplicator deduplicator;
     private final ObjectMapper objectMapper;
 
@@ -56,8 +62,10 @@ public class ConfluenceWebhookController {
             return ResponseEntity.ok().build();
         }
 
-        dispatcher.dispatch(payload)
-            .ifPresent(discordWebhookClient::sendToDocs);
+        dispatcher.dispatch(payload).ifPresent(event -> {
+            discordWebhookClient.sendToDocs(discordMessageFormatter.format(event));
+            chatBrokerClient.send(chatMessageFormatter.format(event));
+        });
 
         return ResponseEntity.ok().build();
     }

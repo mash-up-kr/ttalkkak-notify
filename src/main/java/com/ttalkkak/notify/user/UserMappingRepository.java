@@ -26,4 +26,11 @@ public class UserMappingRepository {
             .map(UserInfo::getName)
             .findFirst();
     }
+
+    public Optional<UserInfo> findUser(String jiraAccountId) {
+        if (jiraAccountId == null) return Optional.empty();
+        return loader.getUsers().stream()
+            .filter(u -> jiraAccountId.equals(u.getJiraAccountId()))
+            .findFirst();
+    }
 }

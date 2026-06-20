@@ -1,11 +1,10 @@
 package com.ttalkkak.notify.jira.handler;
 
-import com.ttalkkak.notify.discord.model.DiscordEmbed;
-import com.ttalkkak.notify.discord.model.DiscordField;
-import com.ttalkkak.notify.discord.model.DiscordMessage;
-import com.ttalkkak.notify.discord.model.EmbedColor;
 import com.ttalkkak.notify.jira.JiraEventHandler;
 import com.ttalkkak.notify.jira.JiraWebhookPayload;
+import com.ttalkkak.notify.notification.EventType;
+import com.ttalkkak.notify.notification.NotificationEvent;
+import com.ttalkkak.notify.notification.NotificationField;
 import com.ttalkkak.notify.user.UserMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,7 +27,7 @@ public class StatusChangedHandler implements JiraEventHandler {
     }
 
     @Override
-    public DiscordMessage handle(JiraWebhookPayload payload) {
+    public NotificationEvent handle(JiraWebhookPayload payload) {
         JiraWebhookPayload.Issue issue = payload.getIssue();
         JiraWebhookPayload.Fields fields = issue.getFields();
 
@@ -36,30 +35,24 @@ public class StatusChangedHandler implements JiraEventHandler {
             .filter(item -> "status".equals(item.getField()))
             .findFirst().orElseThrow();
 
-        String title = "🔄 [" + issue.getKey() + "] " + fields.getSummary();
-        String statusChangeValue = statusChange.getFromString() + " → " + statusChange.getToValue();
-
-        List<DiscordField> embedFields = new ArrayList<>();
-        embedFields.add(DiscordField.builder()
-            .name("상태 변경").value(statusChangeValue).build());
+        List<NotificationField> notifFields = new ArrayList<>();
+        notifFields.add(new NotificationField("상태 변경", statusChange.getFromString() + " → " + statusChange.getToValue(), false));
         if (fields.getAssignee() != null) {
-            String assigneeName = userMappingRepository.findName(fields.getAssignee().getAccountId())
+            String name = userMappingRepository.findName(fields.getAssignee().getAccountId())
                 .orElse(fields.getAssignee().getDisplayName());
-            embedFields.add(DiscordField.builder()
-                .name("담당자").value(assigneeName).inline(true).build());
+            notifFields.add(new NotificationField("담당자", name, true));
         }
         if (fields.getPriority() != null) {
-            embedFields.add(DiscordField.builder()
-                .name("우선순위").value(fields.getPriority().getName()).inline(true).build());
+            notifFields.add(new NotificationField("우선순위", fields.getPriority().getName(), true));
         }
 
-        DiscordEmbed embed = DiscordEmbed.builder()
-            .title(title)
-            .color(EmbedColor.STATUS_CHANGED)
-            .url(issue.getWebUrl())
-            .fields(embedFields)
-            .build();
-
-        return DiscordMessage.builder().embeds(List.of(embed)).build();
+        return new NotificationEvent(
+            EventType.JIRA_STATUS_CHANGED,
+            "🔄 [" + issue.getKey() + "] " + fields.getSummary(),
+            null,
+            issue.getWebUrl(),
+            notifFields,
+            null
+        );
     }
 }

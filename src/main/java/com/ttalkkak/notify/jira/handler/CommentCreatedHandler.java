@@ -1,11 +1,12 @@
 package com.ttalkkak.notify.jira.handler;
 
 import com.ttalkkak.notify.discord.CommentBodySanitizer;
-import com.ttalkkak.notify.discord.model.DiscordEmbed;
-import com.ttalkkak.notify.discord.model.DiscordMessage;
-import com.ttalkkak.notify.discord.model.EmbedColor;
 import com.ttalkkak.notify.jira.JiraEventHandler;
 import com.ttalkkak.notify.jira.JiraWebhookPayload;
+import com.ttalkkak.notify.notification.EventType;
+import com.ttalkkak.notify.notification.Mention;
+import com.ttalkkak.notify.notification.NotificationEvent;
+import com.ttalkkak.notify.user.UserInfo;
 import com.ttalkkak.notify.user.UserMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -30,62 +31,57 @@ public class CommentCreatedHandler implements JiraEventHandler {
     }
 
     @Override
-    public DiscordMessage handle(JiraWebhookPayload payload) {
+    public NotificationEvent handle(JiraWebhookPayload payload) {
         JiraWebhookPayload.Issue issue = payload.getIssue();
         JiraWebhookPayload.Comment comment = payload.getComment();
 
-        String title = "💬 [" + issue.getKey() + "] " + issue.getFields().getSummary();
-
         String rawBody = comment != null && comment.getBody() != null ? comment.getBody() : null;
-
         String authorName = comment != null && comment.getAuthor() != null
             ? userMappingRepository.findName(comment.getAuthor().getAccountId()).orElse(comment.getAuthor().getDisplayName())
             : "알 수 없음";
 
-        String content = null;
-        if (rawBody != null) {
-            String pingPart = extractMentionPings(rawBody);
-            if (pingPart != null) {
-                content = authorName + "님이 댓글에서 " + pingPart + " 님을 언급했습니다.";
-            }
-        }
-
-        String processedBody = rawBody != null ? stripAndTruncate(rawBody) : null;
-        String description = (processedBody != null && !processedBody.isEmpty())
-            ? authorName + ": " + processedBody : null;
-
-        DiscordEmbed embed = DiscordEmbed.builder()
-            .title(title)
-            .description(description)
-            .color(EmbedColor.COMMENT)
-            .url(issue.getWebUrl())
-            .build();
-
-        return DiscordMessage.builder().content(content).embeds(List.of(embed)).build();
+        return new NotificationEvent(
+            EventType.JIRA_COMMENT_CREATED,
+            "💬 [" + issue.getKey() + "] " + issue.getFields().getSummary(),
+            buildDescription(rawBody, authorName),
+            issue.getWebUrl(),
+            null,
+            buildMention(rawBody, authorName)
+        );
     }
 
-    private String extractMentionPings(String body) {
+    private String buildDescription(String rawBody, String authorName) {
+        if (rawBody == null) return null;
+        String text = stripAndTruncate(rawBody);
+        return (text != null && !text.isEmpty()) ? authorName + ": " + text : null;
+    }
+
+    private Mention buildMention(String rawBody, String authorName) {
+        if (rawBody == null) return null;
+        List<UserInfo> targets = extractMentionedUsers(rawBody);
+        if (targets.isEmpty()) return null;
+        return new Mention(authorName + "님이 댓글에서 ", targets, " 님을 언급했습니다.");
+    }
+
+    private List<UserInfo> extractMentionedUsers(String body) {
         Matcher matcher = MENTION_PATTERN.matcher(body);
-        List<String> pings = new ArrayList<>();
+        List<UserInfo> users = new ArrayList<>();
         while (matcher.find()) {
             String accountId = matcher.group(1);
-            userMappingRepository.findDiscordId(accountId)
-                .map(id -> "<@" + id + ">")
-                .ifPresent(pings::add);
+            users.add(userMappingRepository.findUser(accountId)
+                .orElseGet(() -> new UserInfo(accountId, accountId, null)));
         }
-        return pings.isEmpty() ? null : String.join(", ", pings);
+        return users;
     }
 
     private String stripAndTruncate(String body) {
         Matcher matcher = MENTION_PATTERN.matcher(body);
         StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
-            String accountId = matcher.group(1);
-            String name = "@" + userMappingRepository.findName(accountId).orElse(accountId);
+            String name = "@" + userMappingRepository.findName(matcher.group(1)).orElse(matcher.group(1));
             matcher.appendReplacement(sb, Matcher.quoteReplacement(name));
         }
         matcher.appendTail(sb);
-
         String text = CommentBodySanitizer.fromJiraWikiMarkup(sb.toString().trim());
         return text.length() > MAX_BODY_LENGTH ? text.substring(0, MAX_BODY_LENGTH) + "..." : text;
     }

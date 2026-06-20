@@ -1,8 +1,8 @@
 package com.ttalkkak.notify.confluence;
 
-import com.ttalkkak.notify.discord.model.DiscordMessage;
+import com.ttalkkak.notify.notification.NotificationEvent;
 
 public interface ConfluenceEventHandler {
     boolean supports(ConfluenceWebhookPayload payload);
-    DiscordMessage handle(ConfluenceWebhookPayload payload);
+    NotificationEvent handle(ConfluenceWebhookPayload payload);
 }
