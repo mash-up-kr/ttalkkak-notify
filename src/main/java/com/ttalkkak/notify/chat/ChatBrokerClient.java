@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 @Component
@@ -27,16 +28,31 @@ public class ChatBrokerClient {
                         .retrieve()
                         .toBodilessEntity();
                 return;
-            } catch (Exception e) {
+            } catch (HttpStatusCodeException e) {
+                if (e.getStatusCode().is4xxClientError()) {
+                    log.error("채팅 전송 실패 [status={}]", e.getStatusCode().value());
+                    return;
+                }
                 if (attempt < 2) {
-                    log.warn("채팅 전송 실패 — 재시도합니다");
+                    log.warn("채팅 전송 실패 [status={}] — 재시도합니다", e.getStatusCode().value());
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                     }
                 } else {
-                    log.error("채팅 전송 실패 — 재시도 1회, 최종 실패", e);
+                    log.error("채팅 전송 실패 [status={}] — 재시도 1회, 최종 실패", e.getStatusCode().value());
+                }
+            } catch (Exception e) {
+                if (attempt < 2) {
+                    log.warn("채팅 전송 실패 (알 수 없는 오류) — 재시도합니다");
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    log.error("채팅 전송 실패 (알 수 없는 오류) — 재시도 1회, 최종 실패", e);
                 }
             }
         }
