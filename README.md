@@ -1,4 +1,4 @@
-# ttalkkak-notify
+# TMT-notify
 
 Jira∙Confluence에서 보고되는 팀 내 의사결정과 작업 상태를, 딸깍 팀의 소통 플랫폼인 Discord로 실시간 전달합니다.
 
